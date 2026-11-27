@@ -62,7 +62,7 @@ resource "aws_iam_role_policy" "checker_db" {
 
 data "archive_file" "checker" {
   type        = "zip"
-  source_file = "${path.module}/../lambda/checker.py"
+  source_file = "${path.module}/../Lambda/checker.py"
   output_path = "${path.module}/checker.zip"
 }
 
