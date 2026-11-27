@@ -2,20 +2,102 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, intial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Status Page</title>
 <style>
-body {margin: 0; padding: 32px; font-family: -apple-system, Segeo UI, Roboto, sans-serif; background: #0f1117; color: #e4e6eb; }
-h1 { font-size: 22px; }
-.card { background: #1a1d27; border: 1px solid #2a2e3a; border-radius: 12px; padding: 20px; max-width: 550px}
-.muted { color: #8b8f9c; font-size: 14px; }
+:root { --bg: #0f1117; --card: #1a1d27; --border: #2a2e3a; --text: #e4e6eb; --muted: #8b8f9c; --green: #3ecf8e; --red: #ff5c5c; }
+* { box-sizing: border-box; }
+body { margin: 0; padding: 32px 16px; font-family: -apple-system, Segoe UI, Roboto, sans-serif; background: var(--bg); color: var(--text); }
+.wrap { max-width: 640px; margin: 0 auto; }
+h1 { font-size: 22px; margin: 0 0 16px; }
+.banner { padding: 14px 18px; border-radius: 12px; margin-bottom: 20px; font-weight: 600; background: var(--card); border: 1px solid var(--border); }
+.banner.ok { border-color: var(--green); color: var(--green); }
+.banner.bad { border-color: var(--red); color: var(--red); }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; margin-bottom: 14px; }
+.top { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.name { font-weight: 600; word-break: break-all; }
+.pill { font-size: 12px; padding: 4px 10px; border-radius: 999px; white-space: nowrap; border: 1px solid var(--border); color: var(--muted); }
+.pill.up { color: var(--green); border-color: var(--green); }
+.pill.down { color: var(--red); border-color: var(--red); }
+.meta { display: flex; gap: 16px; flex-wrap: wrap; color: var(--muted); font-size: 13px; margin-top: 10px; }
+.bars { display: flex; gap: 2px; margin-top: 12px; height: 26px; }
+.bar { flex: 1; border-radius: 2px; background: var(--green); }
+.bar.down { background: var(--red); }
+.foot { color: var(--muted); font-size: 12px; margin-top: 18px; text-align: center; }
 </style>
 </head>
 <body>
+<div class="wrap">
 <h1>Status Page</h1>
-<div class="card">
-<p>Live checks coming soon.</p>
-<p class="muted">Servereless on AWS: Lambda, Dynamo/p>
+<div id="banner" class="banner">Loading...</div>
+<div id="sites"></div>
+<div class="foot" id="foot">Serverless on AWS: Lambda, DynamoDB, API Gateway, CloudFront, Terraform.</div>
 </div>
+<script>
+const API_URL = "__API_URL__";
+const sitesEl = document.getElementById("sites");
+const bannerEl = document.getElementById("banner");
+
+function ago(ts) {
+  const s = Math.max(0, Math.round(Date.now() / 1000 - ts));
+  if (s < 90) return s + "s ago";
+  if (s < 5400) return Math.round(s / 60) + " min ago";
+  return Math.round(s / 3600) + " h ago";
+}
+
+function add(parent, tag, cls, text) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  if (text !== undefined) e.textContent = text;
+  parent.appendChild(e);
+  return e;
+}
+
+function renderSite(s) {
+  const card = add(sitesEl, "div", "card");
+  const top = add(card, "div", "top");
+  add(top, "div", "name", s.site.replace(/^https?:\/\//, ""));
+  if (s.up === null) {
+    add(top, "div", "pill", "No data yet");
+    return;
+  }
+  add(top, "div", "pill " + (s.up ? "up" : "down"), s.up ? "Operational" : "Down");
+  const meta = add(card, "div", "meta");
+  add(meta, "span", "", "Uptime " + s.uptime + "%");
+  add(meta, "span", "", s.ms + " ms");
+  add(meta, "span", "", "Checked " + ago(s.checked));
+  const bars = add(card, "div", "bars");
+  s.history.forEach(function (h) {
+    add(bars, "div", "bar" + (h ? "" : " down"));
+  });
+}
+
+async function load() {
+  try {
+    const res = await fetch(API_URL + "/status");
+    const data = await res.json();
+    sitesEl.textContent = "";
+    data.sites.forEach(renderSite);
+    const known = data.sites.filter(function (s) { return s.up !== null; });
+    const down = known.filter(function (s) { return !s.up; });
+    if (known.length === 0) {
+      bannerEl.className = "banner";
+      bannerEl.textContent = "Waiting for the first checks";
+    } else if (down.length === 0) {
+      bannerEl.className = "banner ok";
+      bannerEl.textContent = "All systems operational";
+    } else {
+      bannerEl.className = "banner bad";
+      bannerEl.textContent = down.length + " of " + known.length + " systems down";
+    }
+  } catch (err) {
+    bannerEl.className = "banner bad";
+    bannerEl.textContent = "Could not load status data";
+  }
+}
+
+load();
+setInterval(load, 60000);
+</script>
 </body>
 </html>

@@ -75,9 +75,8 @@ resource "aws_s3_bucket_policy" "site" {
 resource "aws_s3_object" "index" {
   bucket       = aws_s3_bucket.site.id
   key          = "index.html"
-  source       = "${path.module}/../site/index.html"
+  content      = replace(file("${path.module}/../site/index.html"), "__API_URL__", aws_apigatewayv2_api.status.api_endpoint)
   content_type = "text/html"
-  etag         = filemd5("${path.module}/../site/index.html")
 }
 
 output "site_url" {
