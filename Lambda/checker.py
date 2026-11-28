@@ -2,10 +2,10 @@ import json
 import os
 import time
 import urllib.error
-import urllIb.request
+import urllib.request
 
 import boto3
-from boto3.dynamodb.conditions import key
+from boto3.dynamodb.conditions import Key
 
 table = boto3.resource("dynamodb").Table(os.environ["TABLE_NAME"])
 sns = boto3.client("sns")
