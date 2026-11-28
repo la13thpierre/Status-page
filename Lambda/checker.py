@@ -1,7 +1,7 @@
 import json
 import os
 import time
-import urllib.errori
+import urllib.error
 import urllIb.request
 
 import boto3
