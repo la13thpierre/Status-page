@@ -1,7 +1,7 @@
 variable "sites" {
   description = "URLs the checker watches"
   type        = list(string)
-  default     = ["https://github.com", "https://www.cloudflare.com"]
+  default     = ["https://github.com", "https://www.cloudflare.com", "https://studyflow-lemon-three.vercel.app"]
 }
 
 resource "aws_dynamodb_table" "checks" {
